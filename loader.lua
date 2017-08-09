@@ -209,7 +209,9 @@ loader = {
       end
 
       for name, item in pairs(game.item_prototypes) do
-        if item.fuel_value > 0 and item.fuel_category == "chemical" then
+        -- Filter out items that either don't have a fuel value, or can be place (such as wooden chest or wooden pole) (also nuclear fuel cells)
+        if item.fuel_value and item.fuel_category and not item.place_result and item.fuel_category == "chemical" then
+
           if all then
             all[#all + 1] = name
           end
