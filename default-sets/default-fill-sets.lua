@@ -1,42 +1,98 @@
---[[HOW TO]]--[[
+--[[
+    These are available globaly for everyone.
+    If there is not a set by the same name in the player, force or global table then sets from default are used.
 
-Fill and Item sets can be pre-defined for global/force/player usage. Sets are
-automaticly updated and verified during on_init or on_configuration_changed. To
-read any changes to these files without changing mod version numbers you will
-have to run:
-/c remote.call("af", "verify_saved_sets")
+    group (string):
+    a group is a string representation of a group, when placed all entities that are in the same group in your hand and quickbar
+    will be counted for autofilling resources.
 
-These are available globaly for everyone. If there is not a set by the same name
-in the player or force table then sets from global are used.
-global-fill-sets.lua
-global-item-sets.lua
+    slots (array):
+    an arrary containing tables of slot definitions
 
-These are available for all forces. If there is not a set by the same name
-in the player table then sets from force are used.
-force-fill-sets.lua
-force-item-sets.lua
+        type (string):
+        currently only fuel, ammo or module
 
-These will be available to all players.
-player-fill-sets.lua
-player-item-sets.lua
+        category (string):
+        the fuel/ammo/module category to use
 
-Priority:
- "max" = use the item with the highest value in your main inventory that is in the category table for the set.
- "min" = use the item with the lowest value in your main inventory that is in the category table for the set.
- "qty" = use the item you have the most of in your main inventory that is in the category table for the set.
- note: Priority #'s for ammo need to be assigned manually
+        limit (number):
+        the maximum amount of the item to put in this slot
 
+        priority (string):
+        "max" = use the item with the highest value in your main inventory that is in the category table for the set.
+        "min" = use the item with the lowest value in your main inventory that is in the category table for the set.
+        "qty" = use the item you have the most of in your main inventory that is in the category table for the set.
 --]]
-
 return {
-  ["car"]                  = {group = nil, slots = {{type="fuel", category="fuel-high", priority="max"}, {type="ammo", category = "bullet", priority = "qty"}}},
-  ["tank"]                 = {group = nil, slots = {{type="fuel", category="fuel-high", priority="min"}, {type="fuel", category="fuel-high", priority="min"},
-                             {type="ammo", category = "bullet", priority = "qty"}, {type="ammo", category = "cannon-shell", priority = "qty"}}},
-  ["diesel-locomotive"]    = {group = "locomotives", slots = {{type="fuel", category="fuel-high", priority="max"}}},
-  ["boiler"]               = {group = "burners", slots = {{type="fuel", category="fuel-all", priority="max", limit=5}}},
-  ["burner-inserter"]      = {group = "burners", slots = {{type="fuel", category="fuel-all", priority="max", limit=5}}},
-  ["burner-mining-drill"]  = {group = "burners", slots = {{type="fuel", category="fuel-all", priority="max", limit=5}}},
-  ["stone-furnace"]        = {group = "furnaces", slots = {{type="fuel", category="fuel-all", priority="max", limit=5},{type="fuel", category="fuel-all", priority="max", limit=5}}},
-  ["steel-furnace"]        = {group = "furnaces", slots = {{type="fuel", category="fuel-all", priority="max", limit=5}}},
-  ["gun-turret"]           = {group = "turrets", slots = {{category = "bullet", priority = "qty", limit=10}}},
+    ["car"] = {
+        group = nil,
+        slots = {
+            {type = "fuel", category = "chemical", priority = "max"},
+            {type = "ammo", category = "bullet", priority = "qty"}
+        }
+    },
+    ["tank"] = {
+        group = nil,
+        slots = {
+            {type = "fuel", category = "chemical", priority = "min"},
+            {type = "fuel", category = "chemical", priority = "min"},
+            {type = "ammo", category = "bullet", priority = "qty"},
+            {type = "ammo", category = "cannon-shell", priority = "qty"}
+        }
+    },
+    ["locomotive"] = {
+        group = "locomotives",
+        slots = {
+            {type = "fuel", category = "chemical", priority = "max"}
+        }
+    },
+    ["artillery-wagon"] = {
+        group = "artillery",
+        slots = {
+            {type = "ammo", category = "artillery-shell", priority = "qty", limit = 5}
+        }
+    },
+    ["boiler"] = {
+        group = "burners",
+        slots = {
+            {type = "fuel", category = "chemical", priority = "max", limit = 5}
+        }
+    },
+    ["burner-inserter"] = {
+        group = "burners",
+        slots = {
+            {type = "fuel", category = "chemical", priority = "max", limit = 5}
+        }
+    },
+    ["burner-mining-drill"] = {
+        group = "burners",
+        slots = {
+            {type = "fuel", category = "chemical", priority = "max", limit = 5}
+        }
+    },
+    ["stone-furnace"] = {
+        group = "furnaces",
+        slots = {
+            {type = "fuel", category = "chemical", priority = "max", limit = 5}
+        }
+    },
+    ["steel-furnace"] = {
+        group = "furnaces",
+        slots = {
+            {type = "fuel", category = "chemical", priority = "max", limit = 5}
+        }
+    },
+    ["gun-turret"] = {
+        group = "turrets",
+        slots = {
+            {type = "ammo", category = "bullet", priority = "qty", limit = 10}
+        }
+    },
+    ["beacon"] = {
+        group = "beacons",
+        slots = {
+            {type = "module", category = "speed", priority = "max", limit = 1},
+            {type = "module", category = "speed", priority = "max", limit = 1}
+        }
+    }
 }
