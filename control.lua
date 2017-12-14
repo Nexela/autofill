@@ -90,6 +90,7 @@ local function hotkey_fill(event)
     if entity and global.enabled and pdata.enabled then
         local set = pdata.sets.fill_sets[entity.name]
         if set then
+            log("Not yet")
         --fill_entity(entity, pdata, set)
         end
     end
