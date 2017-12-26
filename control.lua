@@ -1,560 +1,133 @@
-require "util"
+require("stdlib.core")
+require("stdlib.event.event")
+require("stdlib.event.gui")
 
-MOD = { NAME = "Autofill", IF = "af" }
+--Set up default MOD global variables.
+--These "globals" are not stored in saves
+MOD = {}
+MOD.name = "autofill"
+MOD.version = "2.0.0"
+MOD.fullname = "AutoFill"
+MOD.if_name = "af"
+MOD.interface = require("interface")
+MOD.commands = require("commands")
+MOD.path = "__" .. MOD.name .. "__"
+MOD.config = require("config")
+MOD.log = require("stdlib.log.logger").new(MOD.fullname, "log", MOD.config.DEBUG or false, {log_ticks = true, file_extension = "log"})
+MOD.sets = require("autofill.sets")
 
-require "loader"
-loader.addItemArray "settings/vanilla-items"
-loader.addSets "settings/vanilla-sets"
-loader.extendItemArray "settings/generic-items"
-loader.addItemArray "settings/generic-newitems"
-loader.addSets "settings/generic-sets"
-loader.addItemArray "settings/bob-newitems" --bobwarfare added Artillery and Laser Ammo
-loader.extendItemArray "settings/bob-items" -- Bob Warfare Bullets, Cannon Shells - TODO have it prio extended items
-loader.addSets "settings/bob-sets" -- Bobwarfare added tanks 2 and 3
-loader.addItemArray "settings/dytech-newitems" --Dytech stuff
-loader.extendItemArray "settings/dytech-items"
-loader.addSets "settings/dytech-sets"
-loader.addItemArray "settings/yuoki-ind-newitems" --New Ammo Catergories for YI
-loader.extendItemArray "settings/yuoki-ind-items" -- YI Bullets
-loader.addSets "settings/yuoki-ind-sets" -- YI Item Sets
-loader.addSets "settings/aircraft-sets"
-loader.addSets "settings/5dim-sets"
-loader.extendItemArray "settings/at-items" -- Advanced Tanks and Tankwerkz Mod
-loader.addItemArray "settings/at-newitems"
-loader.addSets "settings/at-sets"
+if MOD.config.DEBUG then
+    log("Debug quickstart enabled")
+    require("stdlib.utils.scripts.quickstart")
+end
 
---flying text colors
-local RED = {r = 0.9}
-local GREEN = {g = 0.7}
-local YELLOW = {r = 0.8, g = 0.8}
+local function new_player_data()
+    local new = {
+        sets = {
+            type = "player",
+            fill_sets = {}
+        },
+        limits = true,
+        groups = true,
+        enabled = true
+    }
+    new.sets.item_sets = table.deepcopy(global.sets.item_sets)
+    setmetatable(new.sets.fill_sets, MOD.sets.mt.players(new))
+    return new
+end
 
-local order = {
-  default = 1,
-  opposite = 2,
-  itemcount = 3
-}
+local function new_force_data()
+    local new = {
+        enabled = true,
+        sets = {
+            type = "force",
+            fill_sets = {}
+        }
+    }
+    setmetatable(new.sets.fill_sets, MOD.sets.mt.forces())
+    return new
+end
 
---
---Events
---
+local Player = require("stdlib.event.player").additional_data(new_player_data)
+local Force = require("stdlib.event.force").additional_data(new_force_data)
 
-script.on_configuration_changed(function()
-    initMod(false,true)
-  end)
+Event.toggle_player_paused = script.generate_event_name()
+Event.toggle_player_enabled = script.generate_event_name()
+Event.build_events = {defines.events.on_built_entity, defines.events.on_robot_built_entity}
+Event.death_events = {defines.events.on_pre_player_mined_item, defines.events.on_entity_died}
 
-script.on_init(function()
-    initMod(true)
-  end)
+local function on_init()
+    global.enabled = true
+    global.sets = {
+        fill_sets = {},
+        item_sets = MOD.sets.build_item_sets()
+    }
+    Player.init()
+    Force.init()
 
-script.on_event(defines.events.on_built_entity, function(event)
-    local player = game.players[event.player_index]
-    --if global.personalsets[player.name] and global.personalsets[player.name].uselimits == nil then global.personalsets[player.name].uselimits=true end
-    local global = global
-    if global.personalsets[player.name] and global.personalsets[player.name].active then
-      local fillset = global.personalsets[player.name][event.created_entity.name] or global.defaultsets[event.created_entity.name]
-      if fillset ~= 0 and fillset ~= nil then
-        autoFill(event.created_entity, player, fillset)
-      end
+    -- Set all metatables
+    MOD.sets.on_load()
+end
+Event.register(Event.core_events.init, on_init)
+
+local Changes = require("stdlib/event/changes")
+Changes.version["2.0.0"] = function()
+    game.print("Autofill upgraded to version 2.0.0, Forcing full reset")
+    global = {}
+    Event.dispatch(Event.core_events.init)
+end
+Changes.register_events()
+
+local function on_load()
+    -- Set all metatables
+    MOD.sets.on_load()
+end
+Event.register(Event.core_events.load, on_load)
+
+Player.register_events()
+Force.register_events()
+
+--[Hotkeys]--
+local function hotkey_fill(event)
+    local player, pdata = Player.get(event.player_index)
+    local entity = player.selected
+    if entity and global.enabled and pdata.enabled then
+        local set = pdata.sets.fill_sets[entity.name]
+        if set then
+            log("Not yet")
+        --fill_entity(entity, pdata, set)
+        end
     end
-  end)
+end
+Event.register("autofill-hotkey-fill", hotkey_fill)
 
-script.on_event(defines.events.on_player_created, function(event)
-    local username = game.players[event.player_index].name
-    if global.personalsets[username] == nil then
-      global.personalsets[username] = { active = true, uselimits=true, usegroups=true }
-    end
-    --log("AutoFill: user ".. username .. " Created")
-  end)
-
-script.on_event("autofill-entity", function(event)
-    local selection = game.players[event.player_index].selected
-    local player = game.players[event.player_index]
-    local global = global
-    if global.personalsets[player.name] and global.personalsets[player.name].active and selection then
-      local fillset = global.personalsets[player.name][selection.name] or global.defaultsets[selection.name]
-      if fillset ~= 0 and fillset ~= nil then
-        autoFill(selection, player, fillset)
-      end
-    end
-  end)
-
-script.on_event("autofill-toggle-limits", function(event)
-    local player = game.players[event.player_index]
-    local afplayer = global.personalsets[player.name]
-    if afplayer then
-      afplayer.uselimits = not afplayer.uselimits
-      if afplayer.uselimits then
+local function toggle_limits(event)
+    local player, pdata = Player.get(event.player_index)
+    pdata.limits = not pdata.limits
+    if pdata.limits then
         player.print({"autofill.toggle-limits-on"})
-      elseif not afplayer.uselimits then
+    else
         player.print({"autofill.toggle-limits-off"})
-      end
-      global.personalsets[player.name].uselimits=afplayer.uselimits
     end
-  end)
+end
+Event.register("autofill-toggle-limits", toggle_limits)
 
-script.on_event("autofill-toggle-groups", function(event)
-    local player = game.players[event.player_index]
-    local afplayer = global.personalsets[player.name]
-    if afplayer then
-      afplayer.usegroups = not afplayer.usegroups
-      if afplayer.usegroups then
+local function toggle_groups(event)
+    local player, pdata = Player.get(event.player_index)
+    pdata.groups = not pdata.groups
+    if pdata.groups then
         player.print({"autofill.toggle-groups-on"})
-      elseif not afplayer.usegroups then
+    else
         player.print({"autofill.toggle-groups-off"})
-      end
-      global.personalsets[player.name].usegroups=afplayer.usegroups
     end
-  end)
-
---
---Funtions
---
-function printToFile(line, title, path)
-  path = path or "log"
-  title = title or "FALSE"
-  path = table.concat({ MOD.IF, "/", path, ".lua" })
-  local msg
-  if type(line) == "string" then
-    msg = line
-  else
-    msg = serpent.dump(line, {name=title, comment=false, sparse=false, sortkeys=true})
-  end
-  game.write_file( path, msg.."\n", true)
 end
+Event.register("autofill-toggle-groups", toggle_groups)
 
-function debugDump(var, force)
-  if false or force then
-    for _, player in pairs(game.players) do
-      local msg
-      if type(var) == "string" then
-        msg = var
-      else
-        msg = serpent.dump(var, {name="var", comment=false, sparse=false, sortkeys=true})
-      end
-      player.print(msg)
-    end
-  end
-end
+local autofill = require("autofill.autofill")
+Event.register(defines.events.on_built_entity, autofill)
 
-function autoFill(entity, player, fillset)
-  local textpos = entity.position
-  local maininv = player.get_inventory(defines.inventory.player_main)
+--Add commands
+commands.add_command(MOD.if_name, MOD.commands.help, MOD.commands.command)
 
-  local vehicleinv
-  local ok, err = pcall(function() vehicleinv = player.vehicle.get_inventory(2) end)
-  if not ok then vehicleinv = false end
-
-  local quickbar = player.get_inventory(defines.inventory.player_quickbar)
-  local array, item, count, groupsize, slots, totalitemcount, color, inserted, removed
-  for i=1, #fillset do --? Item prototype check here?
-    array = fillset[i]
-    item = false
-    count = 0
-    color = RED
-
-    if fillset.priority == order.itemcount then -- Pick item with highest count
-      for j = 1, #array do
-        if game.item_prototypes[array[j]] then
-          if vehicleinv then
-            if maininv.get_item_count(array[j]) + vehicleinv.get_item_count(array[j]) > count then
-              item = array[j]
-              count = maininv.get_item_count(array[j]) + vehicleinv.get_item_count(array[j])
-            end
-          else
-            if maininv.get_item_count(array[j]) > count then
-              item = array[j]
-              count = maininv.get_item_count(array[j])
-            end
-          end
-        end
-      end
-    elseif fillset.priority == order.opposite then --Pick last available item
-      for j = #array, 1, -1 do
-        if game.item_prototypes[array[j]] then
-          if maininv.get_item_count(array[j]) > 0 or vehicleinv and vehicleinv.get_item_count(array[j]) > 0 then
-            item = array[j]
-            count = maininv.get_item_count(array[j])
-            count = not vehicleinv and count or count + vehicleinv.get_item_count(array[j])
-            break
-          end
-        end
-      end
-    else --Pick first available item
-      for j = 1, #array do
-        if game.item_prototypes[array[j]] then
-          if maininv.get_item_count(array[j]) > 0 or vehicleinv and vehicleinv.get_item_count(array[j]) > 0 then
-            item = array[j]
-            count = maininv.get_item_count(array[j])
-            count = not vehicleinv and count or count + vehicleinv.get_item_count(array[j])
-            break
-          end
-        end
-      end
-    end
-
-    if not item or count < 1 then
-      if array[1] ~= nil and game.item_prototypes[array[1]] then
-        text({"autofill.out-of-item", game.item_prototypes[array[1]].localised_name }, textpos, player.surface, color)
-        textpos.y = textpos.y + 1
-      end
-    else
-      -- Divide stack between group (only items in quickbar are part of group)
-      local usegroups = global.personalsets[player.name].usegroups
-      if usegroups == nil then usegroups = true end
-
-      if fillset.group and usegroups then
-        if player.cursor_stack.valid_for_read then
-          groupsize = player.cursor_stack.count + 1
-        else
-          groupsize = 1
-        end
-
-        for k,v in pairs(global.personalsets[player.name]) do
-          if type(v) == "table" and v.group == fillset.group then
-            groupsize = groupsize + quickbar.get_item_count(k)
-          end
-        end
-        for k,v in pairs(global.defaultsets) do
-          if not global.personalsets[player.name][k] and v.group == fillset.group then
-            groupsize = groupsize + quickbar.get_item_count(k)
-          end
-        end
-
-        totalitemcount = 0
-        for j=1, #array do
-          if game.item_prototypes[array[j]] then
-            totalitemcount = totalitemcount + maininv.get_item_count(array[j])
-          end
-        end
-        if vehicleinv then
-          for j=1, #array do
-            if game.item_prototypes[array[j]] then
-              totalitemcount = totalitemcount + vehicleinv.get_item_count(array[j])
-            end
-          end
-        end
-        count = math.max( 1, math.min( count, math.floor(totalitemcount / groupsize) ) )
-      end
-
-      -- Limit insertion if has limit value
-      local uselimits = global.personalsets[player.name].uselimits
-      if uselimits == nil then uselimits = true end
-      --log("limits in autofill script" .. tostring(uselimits))
-      if uselimits and fillset.limits and fillset.limits[i] then
-        if count > fillset.limits[i] then
-          count = fillset.limits[i]
-        end
-      end
-
-      -- Determine insertable stack count if has slot count
-      if fillset.slots and fillset.slots[i] then --TODO Also see if slots are full for use in hotkey filling, also check if we have a better type of ammo/fuel, ALSO check if inv full
-        slots = fillset.slots[i]
-      else
-        slots = 1
-      end
-
-      if count < game.item_prototypes[item].stack_size * slots then
-        color = YELLOW
-      else
-        count = game.item_prototypes[item].stack_size * slots
-        color = GREEN
-      end
-
-      -- Insert, count the difference and remove the difference
-      inserted = entity.get_item_count(item)
-      entity.insert({name=item, count=count})
-      inserted = entity.get_item_count(item) - inserted
-      if inserted > 0 then
-        if vehicleinv then
-          removed = vehicleinv.get_item_count(item)
-          vehicleinv.remove({name=item, count=inserted})
-          removed = removed - vehicleinv.get_item_count(item)
-          if inserted > removed then
-            maininv.remove({name=item, count=inserted - removed})
-          end
-        else
-          maininv.remove({name=item, count=inserted})
-        end
-        if removed then
-          text({"autofill.insertion-from-vehicle", inserted, game.item_prototypes[item].localised_name, removed, game.entity_prototypes[player.vehicle.name].localised_name}, textpos, player.surface, color)
-          textpos.y = textpos.y + 1
-        else
-          text({"autofill.insertion", inserted, game.item_prototypes[item].localised_name }, textpos, player.surface, color)
-          textpos.y = textpos.y + 1
-        end
-      end
-    end -- if not item or count < 1 then
-  end -- for i=1, #fillset do
-end
-
-function getDefaultSets()
-  return {
-    ["car"] = {priority=order.default, global.fuels.all, global.ammo.bullets },
-    ["tank"] = {priority=order.default, slots={2,1,1}, global.fuels.all, global.ammo.bullets, global.ammo.shells },
-    ["diesel-locomotive"] = {priority=order.default, slots={1}, global.fuels.high},
-    ["boiler"] = {priority=order.default, group="burners", limits={5}, global.fuels.high},
-    ["burner-inserter"]= {priority=order.default, group="burners", limits={1}, global.fuels.high},
-    ["burner-mining-drill"] = {priority=order.default, group="burners", limits={5}, global.fuels.high},
-    ["stone-furnace"] = {priority=order.default, group="burners", limits={5}, global.fuels.high},
-    ["steel-furnace"] = {priority=order.default, group="burners", limits={5}, global.fuels.high},
-    ["gun-turret"]= {priority=order.default, group="turrets", limits= {10}, global.ammo.bullets }
-  } -- if group is defined, then insertable items are divided for buildable
-  -- items in quickbar (and in hand).
-end
-
-function getLiteSets()
-  return {
-    ["burner-inserter"]= {priority=order.default, group="burners", limits={1}, global.fuels.high},
-    ["gun-turret"]= {priority=order.default, group="turrets", limits= {10}, global.ammo.bullets }
-  }
-end
-
-function makePersonalLiteSets()
-  local personalsets = {}
-  for k, v in pairs(global.defaultsets) do
-    personalsets[k] = 0
-  end
-
-  personalsets["burner-inserter"] = { priority=order.default, group="burners", limits={1}, global.item_arrays["fuels-high"] }
-  personalsets["gun-turret"] = { priority=order.default, group="turrets", limits= {10}, global.item_arrays["ammo-bullets"] }
-
-  return personalsets
-end
-
-function globalPrint(msg)
-  local players = game.players
-  if type(msg) == "string" then
-    output= msg
-  else
-    output=serpent.dump(msg, {name="var", comment=false, sparse=false, sortkeys=true})
-  end
-  --msg = { "autofill.msg-template", msg }
-  for i=1, #players do
-    players[i].print(output)
-  end
-  printToFile(output)
-end
-
-function initMod(reset,update)
-  if not global.defaultsets or not global.personalsets or not global.item_arrays or reset then
-    global = {} -- Clears global
-
-    loader.loadBackup()
-
-    if not update or reset then
-      if reset then global.personalsets = {} end
-      for k, player in pairs(game.players) do
-        global.personalsets[player.name] = { active = true, uselimits=true, usegroups=true}
-      end
-    end
-
-    global.has_init = true
-    log("Autofill: Initilized")
-  else
-    if update then
-      loader.loadBackup()
-      log("AutoFill: Defaults Updated")
-    else
-      loader.updateFuelArrays(global.item_arrays)
-    end
-  end
-end
-
-function isValidEntity(name)
-  if game.entity_prototypes[name] then
-    return true
-  end
-
-  globalPrint( {"autofill.invalid-entityname", tostring(name)} )
-  return false
-end
-
--- This fuction not just verifies the set, but also links strings into item arrays (replaces).
-function isValidSet(set)
-  if set == nil or set == 0 then
-    return true
-  elseif type(set) == "table" then
-    for i = 1, #set do
-
-      if type(set[i]) == "string" then
-
-        if global.item_arrays[set[i]] then -- replace name with array
-          set[i] = global.item_arrays[set[i]]
-        else
-          if game.item_prototypes[set[i]] then
-            set[i] = { set[i] }
-          else
-            globalPrint( {"autofill.invalid-itemname", tostring(set[i])} )
-            return false
-          end
-        end
-
-      elseif type(set[i]) == "table" then
-
-        for j = 1, #set[i] do
-          if game.item_prototypes[set[i][j]] == nil then
-            globalPrint( {"autofill.invalid-itemname", tostring(set[i][j])} )
-            return false
-          end
-        end
-
-      else
-        globalPrint( {"autofill.invalid-form"} )
-        return false
-      end
-
-    end -- for i = 1, #set do
-
-    return true
-  end
-  globalPrint( {"autofill.invalid-parameter"} )
-  return false
-end
-
-function isValidUser(name)
-  local players = game.players
-  for i=1, #players do
-    if players[i].name == name then
-      return players[i].name
-    end
-  end
-
-  if game.player then -- for single player game
-    return game.player.name
-  end
-
-  globalPrint( {"autofill.invalid-username", tostring(name)} )
-  return false
-end
-
---[[
-function printToFile(line, path)
-  path = path or "log"
-  path = table.concat({ MOD.IF, "/", path, ".txt" })
-  game.write_file( path, line.."\n\n", true)
-end
---]]
-
-function text(line, pos, surface, colour) --colour as optional
-  if colour == nil then
-    surface.create_entity({name="flying-text", position=pos, text=line})
-  else
-    surface.create_entity({name="flying-text", position=pos, text=line, color=colour})
-  end
-end
-
---
--- Mod interface
---
-
-remote.add_interface(MOD.IF,
-  {
-    insertset = function(username, entityname, set)--this fuction is for inserting personal sets.
-      username = isValidUser(username)
-      if username and isValidEntity(entityname) and isValidSet(set) then
-        global.personalsets[username][entityname] = set
-      end
-    end,
-
-    addToDefaultSets = function(entityname, set)
-      if isValidEntity(entityname) and isValidSet(set) then
-        global.defaultsets[entityname] = set
-      end
-    end,
-
-    getDefaultSets = function()
-      local sets = table.deepcopy(global.defaultsets)
-      for entity_name, set in pairs(sets) do
-        for i=1, #set do
-          for name, array in pairs(global.item_arrays) do
-            if global.defaultsets[entity_name][i] == array then
-              set[i] = name
-              break
-            end
-          end
-        end
-      end
-      return sets
-    end,
-
-    setDefaultSets = function(sets)
-      for entity_name, set in pairs(sets) do
-        if not isValidSet(set) then
-          return
-        end
-      end
-      global.defaultsets = sets
-    end,
-
-    getBackupLog = function()
-      local tbl = loader.getBackupLog()
-      local block = table.concat(tbl, "\n")
-      log(block)
-    end,
-
-    getItemArray = function(name)
-      return global.item_arrays[name]
-    end,
-
-    setItemArray = function(name, new_array)
-      if global.item_arrays[name] == nil then
-        global.item_arrays[name] = new_array
-      else -- replaces content of table without creating new table to maintain referers
-        local old_array = global.item_arrays[name]
-        local max = #old_array < #new_array and #new_array or #old_array
-        for i=1, max do
-          old_array[i] = new_array[i]
-        end
-      end
-    end,
-
-    logGlobal = function(key)
-      key = key or "global"
-      if _G[key] then
-        log( serpent.block(_G[key]) )
-      else
-        globalPrint("Global not found.")
-      end
-    end,
-
-    resetMod = function()
-      initMod(true)
-    end,
-
-    resetUser = function(setname, username)
-      username = isValidUser(username)
-      if username then
-        if setname == "lite" then
-          global.personalsets[username] = makePersonalLiteSets()
-        else
-          global.personalsets[username] = { active = true }
-        end
-      end
-    end,
-
-    toggleUsage = function(username)
-      username = isValidUser(username)
-      if username then
-        if global.personalsets[username] then
-          global.personalsets[username].active = not global.personalsets[username].active
-        else
-          global.personalsets[username] = { active = true }
-        end
-      end
-    end,
-
-    setUsage = function(username, toggle)
-      username = isValidUser(username)
-      if username then
-        if global.personalsets[username] then
-          --local oldmode=global.personalsets[username].active
-          global.personalsets[username].active=toggle
-          return not toggle
-        end
-      end
-    end,
-
-    getAllItemArrays = function()
-      return table.deepcopy(global.item_arrays)
-    end
-  })
+--Add the remote interface.
+remote.add_interface(MOD.if_name, MOD.interface)
