@@ -25,7 +25,7 @@ local function new_player_data()
     local new = {
         sets = {
             type = "player",
-            fill_sets = {},
+            fill_sets = {}
         },
         limits = true,
         groups = true,
@@ -54,13 +54,9 @@ local Force = require("stdlib.event.force").additional_data(new_force_data)
 Event.toggle_player_paused = script.generate_event_name()
 Event.toggle_player_enabled = script.generate_event_name()
 Event.build_events = {defines.events.on_built_entity, defines.events.on_robot_built_entity}
-Event.death_events = {defines.events.on_pre_player_mined_item, defines.events.on_robot_pre_mined, defines.events.on_entity_died}
-
-local changes = require("changes")
-Event.register(Event.core_events.configuration_changed, changes.on_configuration_changed)
+Event.death_events = {defines.events.on_pre_player_mined_item, defines.events.on_entity_died}
 
 local function on_init()
-    global._changes = changes.on_init(game.active_mods[MOD.name] or MOD.version)
     global.enabled = true
     global.sets = {
         fill_sets = {},
@@ -74,6 +70,14 @@ local function on_init()
 end
 Event.register(Event.core_events.init, on_init)
 
+local Changes = require("stdlib/event/changes")
+Changes.version["2.0.0"] = function()
+    game.print("Autofill upgraded to version 2.0.0, Forcing full reset")
+    global = {}
+    Event.dispatch(Event.core_events.init)
+end
+Changes.register_events()
+
 local function on_load()
     -- Set all metatables
     MOD.sets.on_load()
@@ -83,7 +87,7 @@ Event.register(Event.core_events.load, on_load)
 Player.register_events()
 Force.register_events()
 
---[[Hotkeys]]
+--[Hotkeys]--
 local function hotkey_fill(event)
     local player, pdata = Player.get(event.player_index)
     local entity = player.selected
@@ -118,9 +122,6 @@ local function toggle_groups(event)
     end
 end
 Event.register("autofill-toggle-groups", toggle_groups)
-
---[[Events]]
---Event.register(defines.events.on_research_finished, research_finished)
 
 local autofill = require("autofill.autofill")
 Event.register(defines.events.on_built_entity, autofill)

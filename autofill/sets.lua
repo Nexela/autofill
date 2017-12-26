@@ -75,7 +75,7 @@ end
 
 --[[Load]]
 sets.on_load = function()
-    if global and global._changes["2.0.0"] then
+    if global and global._changes and global._changes["2.0.0"] then
         -- Set metatable on global to default file sets
         setmetatable(global.sets.fill_sets, sets.mt.global())
 
