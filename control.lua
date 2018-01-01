@@ -12,7 +12,7 @@ MOD.if_name = "af"
 MOD.interface = require("interface")
 MOD.commands = require("commands")
 MOD.path = "__" .. MOD.name .. "__"
-MOD.config = require("config")
+MOD.config = {DEBUG = false}
 MOD.log = require("stdlib.log.logger").new(MOD.fullname, "log", MOD.config.DEBUG or false, {log_ticks = true, file_extension = "log"})
 MOD.sets = require("autofill.sets")
 
@@ -21,35 +21,22 @@ if MOD.config.DEBUG then
     require("stdlib.utils.scripts.quickstart")
 end
 
-local function new_player_data()
+local Player = require("stdlib.event.player")
+local Force = require("stdlib.event.force")
+
+Event._new_player_data = function()
     local new = {
         sets = {
             type = "player",
-            fill_sets = {}
+            fill_sets = setmetatable({}, MOD.sets.mt.fill_sets.players()),
+            item_sets = setmetatable({}, MOD.sets.mt.item_sets.players())
         },
         limits = true,
         groups = true,
         enabled = true
     }
-    new.sets.item_sets = table.deepcopy(global.sets.item_sets)
-    setmetatable(new.sets.fill_sets, MOD.sets.mt.players(new))
     return new
 end
-
-local function new_force_data()
-    local new = {
-        enabled = true,
-        sets = {
-            type = "force",
-            fill_sets = {}
-        }
-    }
-    setmetatable(new.sets.fill_sets, MOD.sets.mt.forces())
-    return new
-end
-
-local Player = require("stdlib.event.player").additional_data(new_player_data)
-local Force = require("stdlib.event.force").additional_data(new_force_data)
 
 Event.toggle_player_paused = script.generate_event_name()
 Event.toggle_player_enabled = script.generate_event_name()
@@ -58,24 +45,18 @@ Event.death_events = {defines.events.on_pre_player_mined_item, defines.events.on
 
 local function on_init()
     global.enabled = true
+    global.default_item_sets = MOD.sets.build_item_sets()
     global.sets = {
-        fill_sets = {},
-        item_sets = MOD.sets.build_item_sets()
+        fill_sets = setmetatable({}, MOD.sets.mt.fill_sets.global()),
+        item_sets = setmetatable({}, MOD.sets.mt.item_sets.global())
     }
-    Player.init()
     Force.init()
-
-    -- Set all metatables
-    MOD.sets.on_load()
+    Player.init()
+    game.print("Autofill Installed")
 end
 Event.register(Event.core_events.init, on_init)
 
 local Changes = require("stdlib/event/changes")
-Changes.version["2.0.0"] = function()
-    game.print("Autofill upgraded to version 2.0.0, Forcing full reset")
-    global = {}
-    Event.dispatch(Event.core_events.init)
-end
 Changes.register_events()
 
 local function on_load()
@@ -84,19 +65,18 @@ local function on_load()
 end
 Event.register(Event.core_events.load, on_load)
 
-Player.register_events()
 Force.register_events()
+Player.register_events()
+
+local autofill = require("autofill.autofill")
+Event.register(defines.events.on_built_entity, autofill)
 
 --[Hotkeys]--
 local function hotkey_fill(event)
-    local player, pdata = Player.get(event.player_index)
-    local entity = player.selected
-    if entity and global.enabled and pdata.enabled then
-        local set = pdata.sets.fill_sets[entity.name]
-        if set then
-            log("Not yet")
-        --fill_entity(entity, pdata, set)
-        end
+    local player = Player.get(event.player_index)
+    if player.selected then
+        event.created_entity = player.selected
+        autofill(event)
     end
 end
 Event.register("autofill-hotkey-fill", hotkey_fill)
@@ -122,9 +102,6 @@ local function toggle_groups(event)
     end
 end
 Event.register("autofill-toggle-groups", toggle_groups)
-
-local autofill = require("autofill.autofill")
-Event.register(defines.events.on_built_entity, autofill)
 
 --Add commands
 commands.add_command(MOD.if_name, MOD.commands.help, MOD.commands.command)

@@ -33,7 +33,7 @@ end
 --[Reset functions]-- Complete reset of the mod. Wipes everything.
 interface.reset_mod = function()
     global = {}
-    Event.dispatch(Event.core_events.init)
+    Event.dispatch({name = Event.core_events.init})
 end
 
 --[Toggle functions]--

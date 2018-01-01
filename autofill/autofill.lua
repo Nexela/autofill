@@ -30,13 +30,12 @@ local function is_enabled(item, force)
     return true
 end
 
+local function _sort(t, a, b)
+    return t[b] < t[a]
+end
+
 local function get_highest_value(tbl, force)
-    for item in iter.spairs(
-        tbl,
-        function(t, a, b)
-            return t[b] < t[a]
-        end
-    ) do
+    for item in iter.spairs(tbl, _sort) do
         if game.item_prototypes[item] and is_enabled(item, force) then
             return item, game.item_prototypes[item].stack_size
         end
@@ -48,7 +47,7 @@ local function autofill(event)
     local entity = event.created_entity
     local player, pdata = game.players[event.player_index], global.players[event.player_index]
     local ghost = entity.name == "entity-ghost"
-    local set = pdata.sets.fill_sets[entity.name] or (ghost and pdata.sets.fill_sets[entity.ghost_name])
+    local set = (ghost and pdata.sets.fill_sets[entity.ghost_name]) or pdata.sets.fill_sets[entity.name]
     if set and global.enabled and pdata.enabled then
         local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
         --Increment y position everytime text_pos is called
@@ -81,6 +80,7 @@ local function autofill(event)
 
             -- START Item Count --------------------------------------------------------
             --Get the item list from player or default if no player
+            --TODO META TF this up
             local item_list = pdata.sets.item_sets[slot.type][slot.category]
 
             --No item list or item list is not a table.
@@ -90,7 +90,8 @@ local function autofill(event)
             end
 
             if player.cheat_mode then
-                item, item_count = get_highest_value(item_list, player.force)
+                item = get_highest_value(item_list, player.force)
+                item_count = 32000000
             elseif priority == "qty" or ghost then
                 for item_name, _ in pairs(item_list) do
                     local proto = game.item_prototypes[item_name]

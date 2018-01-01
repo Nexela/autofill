@@ -23,12 +23,14 @@
         "min" = use the item with the lowest value in your main inventory that is in the category table for the set.
         "qty" = use the item you have the most of in your main inventory that is in the category table for the set.
 --]]
+local copy = table.deepcopy
+
 local fuel_with_limit = {type = "fuel", category = "chemical", priority = "max", limit = 5}
 local fuel_max = {type = "fuel", category = "chemical", priority = "max"}
 local ammo_bullet_qty = {type = "ammo", category = "bullet", priority = "qty", limit = 20}
 
 local sets = {
-    ["car"] = {slots = {fuel_max, ammo_bullet_qty}},
+    ["car"] = {slots = {copy(fuel_max), copy(ammo_bullet_qty)}},
     ["tank"] = {
         group = nil,
         slots = {
@@ -38,17 +40,17 @@ local sets = {
             {type = "ammo", category = "cannon-shell", priority = "qty"}
         }
     },
-    ["locomotive"] = {group = "locomotives", slots = {fuel_max}},
+    ["locomotive"] = {group = "locomotives", slots = {copy(fuel_max)}},
     ["artillery-wagon"] = {
         group = "artillery",
         slots = {{type = "ammo", category = "artillery-shell", priority = "qty", limit = 5}}
     },
-    ["boiler"] = {group = "burners", slots = {fuel_with_limit}},
-    ["burner-inserter"] = {group = "burners", slots = {fuel_with_limit}},
-    ["burner-mining-drill"] = {group = "burners", slots = {fuel_with_limit}},
-    ["stone-furnace"] = {group = "furnaces", slots = {fuel_with_limit}},
-    ["steel-furnace"] = {group = "furnaces", slots = {fuel_with_limit}},
-    ["gun-turret"] = {group = "turrets", slots = {ammo_bullet_qty}},
+    ["boiler"] = {group = "burners", slots = {copy(fuel_with_limit)}},
+    ["burner-inserter"] = {group = "burners", slots = {copy(fuel_with_limit)}},
+    ["burner-mining-drill"] = {group = "burners", slots = {copy(fuel_with_limit)}},
+    ["stone-furnace"] = {group = "furnaces", slots = {copy(fuel_with_limit)}},
+    ["steel-furnace"] = {group = "furnaces", slots = {copy(fuel_with_limit)}},
+    ["gun-turret"] = {group = "turrets", slots = {copy(ammo_bullet_qty)}},
     ["artillery-turret"] = {group = "artillery", slots = {{type = "ammo", category = "artillery-shell", priority = "qty", limit = 5}}},
     ["beacon"] = {
         group = "beacons",
@@ -58,38 +60,38 @@ local sets = {
         }
     },
     -- End Vanilla --
-    ["farl"] = {group = "locomotives", slots = {fuel_max}},
-    ["shuttleTrain"] = {group = "locomotives", slots = {fuel_max}},
-    ["boiler-3"] = {group = "burners", slots = {fuel_with_limit}},
-    ["boiler-2"] = {group = "burners", slots = {fuel_with_limit}},
-    ["boiler-4"] = {group = "burners", slots = {fuel_with_limit}},
-    ["mixing-furnace"] = {group = "burners", slots = {fuel_with_limit}},
-    ["chemical-boiler"] = {group = "burners", slots = {fuel_with_limit}},
-    ["bob-gun-turret-2"] = {group = "turrets", slots = {ammo_bullet_qty}},
-    ["bob-gun-turret-3"] = {group = "turrets", slots = {ammo_bullet_qty}},
-    ["bob-gun-turret-4"] = {group = "turrets", slots = {ammo_bullet_qty}},
-    ["bob-gun-turret-5"] = {group = "turrets", slots = {ammo_bullet_qty}},
-    ["bob-sniper-turret-1"] = {group = "turrets", slots = {ammo_bullet_qty}},
-    ["bob-sniper-turret-2"] = {group = "turrets", slots = {ammo_bullet_qty}},
-    ["bob-sniper-turret-3"] = {group = "turrets", slots = {ammo_bullet_qty}},
-    ["y_turret_gun1f12"] = {group = "turrets", slots = {ammo_bullet_qty}},
-    ["y_turret_gun2f12"] = {group = "turrets", slots = {ammo_bullet_qty}},
+    ["farl"] = {group = "locomotives", slots = {copy(fuel_max)}},
+    ["shuttleTrain"] = {group = "locomotives", slots = {copy(fuel_max)}},
+    ["boiler-3"] = {group = "burners", slots = {copy(fuel_with_limit)}},
+    ["boiler-2"] = {group = "burners", slots = {copy(fuel_with_limit)}},
+    ["boiler-4"] = {group = "burners", slots = {copy(fuel_with_limit)}},
+    ["mixing-furnace"] = {group = "burners", slots = {copy(fuel_with_limit)}},
+    ["chemical-boiler"] = {group = "burners", slots = {copy(fuel_with_limit)}},
+    ["bob-gun-turret-2"] = {group = "turrets", slots = {copy(ammo_bullet_qty)}},
+    ["bob-gun-turret-3"] = {group = "turrets", slots = {copy(ammo_bullet_qty)}},
+    ["bob-gun-turret-4"] = {group = "turrets", slots = {copy(ammo_bullet_qty)}},
+    ["bob-gun-turret-5"] = {group = "turrets", slots = {copy(ammo_bullet_qty)}},
+    ["bob-sniper-turret-1"] = {group = "turrets", slots = {copy(ammo_bullet_qty)}},
+    ["bob-sniper-turret-2"] = {group = "turrets", slots = {copy(ammo_bullet_qty)}},
+    ["bob-sniper-turret-3"] = {group = "turrets", slots = {copy(ammo_bullet_qty)}},
+    ["y_turret_gun1f12"] = {group = "turrets", slots = {copy(ammo_bullet_qty)}},
+    ["y_turret_gun2f12"] = {group = "turrets", slots = {copy(ammo_bullet_qty)}},
     ["y_turret_plasma"] = {group = "plasmaturrets", slots = {{type = "ammo", category = "ammo-yi-plasma", priority = "qty", limit = 20}}},
     ["y_turret_flame"] = {group = "plasmaturrets", slots = {{type = "ammo", category = "ammo-yi-chem", priority = "qty", limit = 20}}},
-    ["bob-diesel-locomotive-2"] = {group = "locomotives", slots = {fuel_max, fuel_max}},
-    ["bob-diesel-locomotive-3"] = {group = "locomotives", slots = {fuel_max, fuel_max, fuel_max}},
-    ["bob-armoured-diesel-locomotive"] = {group = "locomotives", slots = {fuel_max, fuel_max}},
-    ["y-boiler-t2"] = {group = "burners", slots = {fuel_with_limit}},
-    ["y-boiler-t3"] = {group = "burners", slots = {fuel_with_limit}},
-    ["y-boiler-iv"] = {group = "burners", slots = {fuel_with_limit}},
-    ["y-obninsk-reactor"] = {group = "burners", slots = {fuel_with_limit}},
-    ["ammobox-gun-turret-2"] = {group = "turrets", slots = {ammo_bullet_qty}},
-    ["hvmg-turret"] = {group = "turrets", slots = {ammo_bullet_qty}},
+    ["bob-diesel-locomotive-2"] = {group = "locomotives", slots = {copy(fuel_max), copy(fuel_max)}},
+    ["bob-diesel-locomotive-3"] = {group = "locomotives", slots = {copy(fuel_max), copy(fuel_max), copy(fuel_max)}},
+    ["bob-armoured-diesel-locomotive"] = {group = "locomotives", slots = {copy(fuel_max), copy(fuel_max)}},
+    ["y-boiler-t2"] = {group = "burners", slots = {copy(fuel_with_limit)}},
+    ["y-boiler-t3"] = {group = "burners", slots = {copy(fuel_with_limit)}},
+    ["y-boiler-iv"] = {group = "burners", slots = {copy(fuel_with_limit)}},
+    ["y-obninsk-reactor"] = {group = "burners", slots = {copy(fuel_with_limit)}},
+    ["ammobox-gun-turret-2"] = {group = "turrets", slots = {copy(ammo_bullet_qty)}},
+    ["hvmg-turret"] = {group = "turrets", slots = {copy(ammo_bullet_qty)}},
     ["bob-tank-2"] = {
         slots = {
-            fuel_with_limit,
-            fuel_with_limit,
-            fuel_with_limit,
+            copy(fuel_with_limit),
+            copy(fuel_with_limit),
+            copy(fuel_with_limit),
             {type = "ammo", category = "bullet", priority = "qty", limit = 20},
             {type = "ammo", category = "cannon-shell", priority = "qty", limit = 20},
             {type = "ammo", category = "artillery-shell", priority = "qty", limit = 20}
@@ -97,22 +99,22 @@ local sets = {
     },
     ["bob-tank-3"] = {
         slots = {
-            fuel_with_limit,
-            fuel_with_limit,
-            fuel_with_limit,
-            fuel_with_limit,
+            copy(fuel_with_limit),
+            copy(fuel_with_limit),
+            copy(fuel_with_limit),
+            copy(fuel_with_limit),
             {type = "ammo", category = "bullet", priority = "qty", limit = 20},
             {type = "ammo", category = "battery", priority = "qty", limit = 20},
             {type = "ammo", category = "cannon-shell", priority = "qty", limit = 20},
             {type = "ammo", category = "artillery-shell", priority = "qty", limit = 20}
         }
     },
-    ["bulldozer"] = {slots = {fuel_max, fuel_max}}, --Bulldozer
-    ["burner-ore-crusher"] = {group = "burners", slots = {fuel_with_limit}}, --Angels
-    ["diesel-locomotive-mk2"] = {group = "locomotives",slots = {fuel_max, fuel_max, fuel_max}},
-    ["diesel-locomotive-mk3"] = {group = "locomotives",slots = {fuel_max, fuel_max, fuel_max}},
-    ["gun-turret-mk2"] = {group = "turrets", slots = {ammo_bullet_qty}},
-    ["exploration-vehicle"] = {slots = {fuel_max, ammo_bullet_qty}}
+    ["bulldozer"] = {slots = {copy(fuel_max), copy(fuel_max)}}, --Bulldozer
+    ["burner-ore-crusher"] = {group = "burners", slots = {copy(fuel_with_limit)}}, --Angels
+    ["diesel-locomotive-mk2"] = {group = "locomotives",slots = {copy(fuel_max), copy(fuel_max), copy(fuel_max)}},
+    ["diesel-locomotive-mk3"] = {group = "locomotives",slots = {copy(fuel_max), copy(fuel_max), copy(fuel_max)}},
+    ["gun-turret-mk2"] = {group = "turrets", slots = {copy(ammo_bullet_qty)}},
+    ["exploration-vehicle"] = {slots = {copy(fuel_max), copy(ammo_bullet_qty)}}
 }
 
 return sets

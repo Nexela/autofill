@@ -5,19 +5,26 @@
 local Core = require("stdlib.core")
 local sets = {}
 
---[[Functions]]
-sets.set_ammo_priority = function(set, category, name, priority)
+--[Functions]
+sets.set_ammo_priority =
+    function(set, category, name, priority)
     if set and set["ammo"] and set["ammo"][category] and set["ammo"][category][name] then
-        set["ammo"][category][name] = priority
+        local mt = getmetatable(set)
+        setmetatable(set, {})
+        set.ammo = set.ammo or {}
+        set.ammo[category] = set.ammo[category] or {}
+        set.ammo[category][name] = priority
+        setmetatable(set, mt)
         return true
     end
 end
 
-sets.build_item_sets = function()
+sets.build_item_sets =
+    function()
     local set = {
         fuel = {},
         ammo = {},
-        module = {},
+        module = {}
     }
 
     --Get Ammo's and Fuels
@@ -44,49 +51,52 @@ sets.build_item_sets = function()
 
     -- increase priority of vanilla bullets:
     -- TODO interface to set level
-
     sets.set_ammo_priority(set, "bullet", "piercing-rounds-magazine", 10)
     sets.set_ammo_priority(set, "bullet", "uranium-rounds-magazine", 20)
 
     return set
 end
 
---[[Defaults]]
-sets.default = {}
-sets.default.fill_sets = Core.prequire("default-sets.default-fill-sets")
+--[Defaults]
+sets.default = {
+    fill_sets = Core.prequire("default-sets.default-fill-sets") or {},
+    item_sets = {} -- populated in global during on_init and config_changed
+}
 
---[[Metatable Information]]
-sets.mt = {}
---Create index from global to autofill.defaut
-sets.mt.global = function()
-    return {__index = sets.default.fill_sets}
-end
-
---Create index from global.forces["force_name"] to global.sets
-sets.mt.forces = function()
-    return {__index = global.sets.fill_sets}
-end
-
---Create index from global.players[index] to global.forces[players[index].force]
-sets.mt.players = function(data)
-    local force = data.force or "player"
-    return {__index = global.forces[force].sets.fill_sets}
-end
-
---[[Load]]
-sets.on_load = function()
-    if global and global._changes and global._changes["2.0.0"] then
-        -- Set metatable on global to default file sets
-        setmetatable(global.sets.fill_sets, sets.mt.global())
-
-        -- Set metatable on forces to global sets
-        for name in pairs(global.forces) do
-            setmetatable(global.forces[name].sets.fill_sets, sets.mt.forces())
+--[Metatable Information]
+sets.mt = {
+    fill_sets = {
+        --Create index from global to autofill.defaut
+        global = function()
+            return {__index = sets.default.fill_sets}
+        end,
+        --Create index from global.players[index] to global.item_sets
+        players = function()
+            return {__index = global.sets.fill_sets}
         end
+    },
+    item_sets = {
+        --Create index from global to autofill.defaut
+        global = function()
+            return {__index = global.default_item_sets}
+        end,
+        --Create index from global.players[index] to global.item_sets
+        players = function()
+            return {__index = global.sets.item_sets}
+        end
+    }
+}
 
-        -- set metatable on players to force sets
+--[Load]
+sets.on_load = function()
+    if global and global._changes and global._changes["2.0.2"] then
+        -- Set metatable on global to default file sets
+        setmetatable(global.sets.fill_sets, sets.mt.fill_sets.global())
+        setmetatable(global.sets.item_sets, sets.mt.item_sets.global())
+        -- set metatable on players to global sets
         for index in pairs(global.players) do
-            setmetatable(global.players[index].sets.fill_sets, sets.mt.players(global.players[index]))
+            setmetatable(global.players[index].sets.fill_sets, sets.mt.fill_sets.players())
+            setmetatable(global.players[index].sets.item_sets, sets.mt.item_sets.players())
         end
     end
 end
