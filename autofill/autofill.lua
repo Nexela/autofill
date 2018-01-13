@@ -46,8 +46,8 @@ end
 local function autofill(event)
     local entity = event.created_entity
     local player, pdata = game.players[event.player_index], global.players[event.player_index]
-    local ghost = entity.name == "entity-ghost"
-    local set = (ghost and pdata.sets.fill_sets[entity.ghost_name]) or pdata.sets.fill_sets[entity.name]
+    local ghost = entity.name == "entity-ghost" and player.mod_settings["autofill-ghost"].value
+    local set = (ghost and pdata.sets.fill_sets[entity.ghost_name]) or (pdata.sets.fill_sets[entity.name] and player.mod_settings["autofill-entity"].value)
     if set and global.enabled and pdata.enabled then
         local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
         --Increment y position everytime text_pos is called
@@ -81,7 +81,7 @@ local function autofill(event)
             -- START Item Count --------------------------------------------------------
             --Get the item list from player or default if no player
             --TODO META TF this up
-            local item_list = pdata.sets.item_sets[slot.type][slot.category]
+            local item_list = table.dictionary_merge(pdata.sets.item_sets[slot.type][slot.category])
 
             --No item list or item list is not a table.
             if not item_list or type(item_list) ~= "table" then

@@ -2,25 +2,22 @@
 --[[sets.lua: Defines all set and table data]]
 -------------------------------------------------------------------------------
 --game.print(global.players[1].sets.fill_sets["stone-furnace"].group)
-local Core = require("stdlib.core")
+local Core = require("stdlib/core")
 local sets = {}
 
 --[Functions]
-sets.set_ammo_priority =
-    function(set, category, name, priority)
+function sets.set_ammo_priority(set, category, name, priority)
     if set and set["ammo"] and set["ammo"][category] and set["ammo"][category][name] then
-        local mt = getmetatable(set)
-        setmetatable(set, {})
+        setmetatable(set, nil)
         set.ammo = set.ammo or {}
         set.ammo[category] = set.ammo[category] or {}
         set.ammo[category][name] = priority
-        setmetatable(set, mt)
+        sets.set_item_tables(set)
         return true
     end
 end
 
-sets.build_item_sets =
-    function()
+function sets.build_item_sets()
     local set = {
         fuel = {},
         ammo = {},
@@ -77,27 +74,91 @@ sets.mt = {
     },
     item_sets = {
         --Create index from global to autofill.defaut
-        global = function()
-            return {__index = global.default_item_sets}
+        global = function(class, category)
+            if category then
+                return {__index = global.default_item_sets[class][category]}
+            elseif class then
+                return {__index = global.default_item_sets[class]}
+            else
+                return {__index = global.default_item_sets}
+            end
         end,
         --Create index from global.players[index] to global.item_sets
-        players = function()
-            return {__index = global.sets.item_sets}
+        players = function(class, category)
+            if category then
+                return {__index = global.sets.item_sets[class][category]}
+            elseif class then
+                return {__index = global.sets.item_sets[class]}
+            else
+                return {__index = global.sets.item_sets}
+            end
         end
-    }
+    },
+    pairs = function(t)
+        local new = table.dictionary_merge({}, t)
+        local meta = getmetatable(t)
+        while meta do
+            new = table.dictionary_merge(new, meta.__index)
+            meta = getmetatable(meta)
+        end
+
+        return pairs(new)
+    end
 }
 
+-- local a =
+--     setmetatable(
+--     {test = "A", good = "bad"},
+--     setmetatable(
+--         {
+--             __index = {test = "B", good = "C"},
+--             __pairs = sets.mt.pairs
+--         },
+--         {
+--             __index = {test = "D", good = "B", awesome = "X"},
+--             __pairs = sets.mt.pairs
+--         }
+--     )
+-- )
+
+-- for k, v in pairs(a) do
+--     print(k .. v)
+-- end
+
 --[Load]
-sets.on_load = function()
-    if global and global._changes and global._changes["2.0.2"] then
-        -- Set metatable on global to default file sets
-        setmetatable(global.sets.fill_sets, sets.mt.fill_sets.global())
-        setmetatable(global.sets.item_sets, sets.mt.item_sets.global())
-        -- set metatable on players to global sets
+
+function sets.set_item_tables(t)
+    for class, classes in pairs(t) do
+        setmetatable(t[class], sets.mt.item_sets.player(class))
+        for category in pairs(classes) do
+            setmetatable(t[class][category], sets.mt.item_sets.players(class, category))
+        end
+    end
+end
+
+function sets.load_global()
+    setmetatable(global.sets.fill_sets, sets.mt.fill_sets.global())
+    sets.set_item_tables(global.sets.item_sets)
+end
+
+function sets.load_player(new_sets)
+    if new_sets then
+        setmetatable(new_sets.fill_sets, sets.mt.fill_sets.players())
+        sets.set_item_tables(new_sets.item_sets)
+    else
         for index in pairs(global.players) do
             setmetatable(global.players[index].sets.fill_sets, sets.mt.fill_sets.players())
-            setmetatable(global.players[index].sets.item_sets, sets.mt.item_sets.players())
+            sets.set_item_tables(global.players[index].sets.item_sets)
         end
+    end
+end
+
+sets.on_load = function()
+    if global and global._changes and global._changes["2.0.2"] then
+    -- Set metatable on global to default file sets
+        sets.load_global()
+    -- set metatable on players to global sets
+        sets.load_player()
     end
 end
 

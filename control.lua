@@ -28,13 +28,14 @@ Event._new_player_data = function()
     local new = {
         sets = {
             type = "player",
-            fill_sets = setmetatable({}, MOD.sets.mt.fill_sets.players()),
-            item_sets = setmetatable({}, MOD.sets.mt.item_sets.players())
+            fill_sets = {},
+            item_sets = {}
         },
         limits = true,
         groups = true,
         enabled = true
     }
+    MOD.sets.load_player(new.sets)
     return new
 end
 
@@ -47,9 +48,10 @@ local function on_init()
     global.enabled = true
     global.default_item_sets = MOD.sets.build_item_sets()
     global.sets = {
-        fill_sets = setmetatable({}, MOD.sets.mt.fill_sets.global()),
-        item_sets = setmetatable({}, MOD.sets.mt.item_sets.global())
+        fill_sets = {},
+        item_sets = {}
     }
+    MOD.sets.load_global()
     Force.init()
     Player.init()
     game.print("Autofill Installed")
