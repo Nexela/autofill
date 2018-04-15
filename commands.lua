@@ -30,4 +30,10 @@ function commands.command(event)
     end
 end
 
+function commands.dump()
+    MOD.interface.write_global()
+    MOD.interface.write_default_sets()
+    MOD.interface.write_MOD_global()
+end
+
 return commands

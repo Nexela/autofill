@@ -1,32 +1,50 @@
 --[REMOTE INTERFACES]-- Command Line and access from other mods is enabled here.
 local interface = {}
 
-interface.console = require("stdlib/utils/scripts/console")
+local Event = require('stdlib/event/event')
+local Sets = require('autofill/sets')
+local Inspect = require('stdlib/utils/vendor/inspect')
+
+interface.console = require('stdlib/utils/scripts/console')
+
+local function options(name)
+    return {
+        comment = false,
+        sparse = true,
+        compact = true,
+        indent = '  ',
+        nocode = true,
+        name = name or nil,
+        metatostring = false,
+    }
+end
 
 --Dump the "global" to logfile
 function interface.write_global(name)
-    if name and type(name) == "string" then
-        game.write_file(MOD.fullname.."/global.lua", serpent.block(global[name], {comment=false, sparse=true, compact=true, indent="    "}))
+    if name and type(name) == 'string' then
+        game.write_file(MOD.fullname .. '/global.lua', serpent.block(global[name], options('global')))
     else
-        game.write_file(MOD.fullname.."/global.lua", serpent.block(global, {comment=false, sparse=true, compact=true, indent="    "}))
+        game.write_file(MOD.fullname .. '/global.lua', serpent.block(global, options('global')))
+        game.write_file(MOD.fullname .. '/global-I.lua', Inspect(global))
+
     end
 end
 
 --Dump the MOD data to logfile
 function interface.write_MOD_global(name)
-    if name and type(name) == "string" then
-        game.write_file(MOD.fullname.."/MOD.lua", serpent.block(MOD[name], {comment=false, sparse=true, compact=true, indent="    "}))
+    if name and type(name) == 'string' then
+        game.write_file(MOD.fullname .. '/MOD.lua', serpent.block(MOD[name], options('MOD')))
     else
-        game.write_file(MOD.fullname.."/MOD.lua", serpent.block(MOD, {comment=false, sparse=true, compact=true, indent="    "}))
+        game.write_file(MOD.fullname .. '/MOD.lua', serpent.block(MOD, options('MOD')))
     end
 end
 
 --Dump the MOD data to logfile
 function interface.write_default_sets(name)
-    if name and type(name) == "string" then
-        game.write_file(MOD.fullname.."/default_sets.lua", serpent.block(MOD.sets.default[name], {comment=false, sparse=true, compact=false, indent="    "}))
+    if name and type(name) == 'string' then
+        game.write_file(MOD.fullname .. '/default_sets.lua', serpent.block(Sets.default[name], options('default_sets')))
     else
-        game.write_file(MOD.fullname.."/default_sets.lua", serpent.block(MOD.sets.default, {comment=false, sparse=true, compact=false, indent="    "}))
+        game.write_file(MOD.fullname .. '/default_sets.lua', serpent.block(table.fullcopy(Sets.default), options('default_sets')))
     end
 end
 

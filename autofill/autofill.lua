@@ -1,4 +1,5 @@
-local Position = require("stdlib.area.position")
+local Position = require("stdlib/area/position")
+local Iter = require("stdlib/utils/iter")
 local priorities = {["qty"] = "qty", ["max"] = "max", ["min"] = "min"}
 
 local function flying_text(line, color, pos, surface)
@@ -35,7 +36,7 @@ local function _sort(t, a, b)
 end
 
 local function get_highest_value(tbl, force)
-    for item in iter.spairs(tbl, _sort) do
+    for item in Iter.spairs(tbl, _sort) do
         if game.item_prototypes[item] and is_enabled(item, force) then
             return item, game.item_prototypes[item].stack_size
         end

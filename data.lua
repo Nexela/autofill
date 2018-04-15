@@ -1,2 +1,2 @@
-require("prototypes.styles")
-require("prototypes.controls")
+require("prototypes/styles")
+require("prototypes/controls")
