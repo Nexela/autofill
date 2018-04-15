@@ -2,14 +2,15 @@
 -- @classmod Technology
 
 local Technology = {
-    _class = "technology"
+    _class = 'Technology'
 }
-setmetatable(Technology, {__index = require("stdlib/data/data")})
+setmetatable(Technology, require('stdlib/data/data'))
 
-function Technology:_get(tech)
-    return self:get(tech, "technology")
+local Is = require('stdlib/utils/is')
+
+function Technology:_caller(tech)
+    return self:get(tech, 'technology')
 end
-Technology:set_caller(Technology._get)
 
 --[[
 type = "technology",
@@ -49,10 +50,11 @@ order = "e-a-a"
 -- end
 
 function Technology:add_effect(effect, unlock_type)
-    self.fail_if_not(effect)
+    Is.Assert(effect)
 
     --todo fix for non recipe types
-    local add_unlock = function(technology, name)
+    local add_unlock =
+        function(technology, name)
         local effects = technology.effects
         effects[#effects + 1] = {
             type = unlock_type,
@@ -60,22 +62,22 @@ function Technology:add_effect(effect, unlock_type)
         }
     end
 
-    if self:valid("technology") then
-        local Recipe = require("stdlib/data/recipe")
-        unlock_type = (not unlock_type and "unlock-recipe") or unlock_type
-        local r_name = type(effect) == "table" and effect.name or effect
-        if unlock_type == "unlock-recipe" or not unlock_type then
+    if self:valid('technology') then
+        local Recipe = require('stdlib/data/recipe')
+        unlock_type = (not unlock_type and 'unlock-recipe') or unlock_type
+        local r_name = type(effect) == 'table' and effect.name or effect
+        if unlock_type == 'unlock-recipe' or not unlock_type then
             if Recipe(effect):valid() then
                 add_unlock(self, r_name)
             end
         end
-    elseif self:valid("recipe") then
-        unlock_type = "unlock-recipe"
+    elseif self:valid('recipe') then
+        unlock_type = 'unlock-recipe'
         -- Convert to array and return first valid tech
-        local techs = type(effect) == "string" and {effect} or effect
+        local techs = type(effect) == 'string' and {effect} or effect
         for _, name in pairs(techs) do
             local tech = Technology(name)
-            if tech:valid("technology") then
+            if tech:valid('technology') then
                 self:set_enabled(false)
                 add_unlock(tech, self.name)
                 break
@@ -87,22 +89,22 @@ function Technology:add_effect(effect, unlock_type)
 end
 
 function Technology:remove_effect(tech_name, unlock_type, name)
-    if self:valid("technology") then
+    if self:valid('technology') then
         return self, name, unlock_type -- TODO finish
-    elseif self:valid("recipe") then
+    elseif self:valid('recipe') then
         if tech_name then
             local tech = Technology(tech_name)
             if tech:valid() then
                 for index, effect in pairs(tech.effects or {}) do
-                    if effect.type == "unlock-recipe" and effect.recipe == self.name then
+                    if effect.type == 'unlock-recipe' and effect.recipe == self.name then
                         table.remove(tech.effects, index)
                     end
                 end
             end
         else
-            for _, tech in pairs(data.raw["technology"]) do
+            for _, tech in pairs(data.raw['technology']) do
                 for index, effect in pairs(tech.effects or {}) do
-                    if effect.type == "unlock-recipe" and effect.recipe == self.name then
+                    if effect.type == 'unlock-recipe' and effect.recipe == self.name then
                         table.remove(tech.effects, index)
                     end
                 end
@@ -113,15 +115,15 @@ function Technology:remove_effect(tech_name, unlock_type, name)
 end
 
 function Technology:add_pack(new_pack, count)
-    if self:valid("technology") then
-        local Item = require("stdlib/data/item")
+    if self:valid('technology') then
+        local Item = require('stdlib/data/item')
         if self.table(new_pack) then
             count = new_pack[2] or 1
             new_pack = new_pack[1]
         elseif self.string(new_pack) then
             count = count or 1
         else
-            error("new_pack must be a table or string")
+            error('new_pack must be a table or string')
         end
 
         if Item(new_pack):valid() then
@@ -134,14 +136,12 @@ function Technology:add_pack(new_pack, count)
 end
 
 function Technology:remove_pack(pack)
-    if self:valid("technology") then
-        local ing = self.unit.ingredients
-        if ing then
-            for i = #ing, 1, -1 do
-                if ing[i][1] == pack then
-                    ing[i] = nil
-                    break
-                end
+    if self:valid('technology') then
+        local ings = self.unit.ingredients
+        for i, ing in pairs(ings or {}) do
+            if ing[1] == pack then
+                table.remove(ings, i)
+                break
             end
         end
     end
@@ -149,15 +149,13 @@ function Technology:remove_pack(pack)
 end
 
 function Technology:replace_pack(old_pack, new_pack, count)
-    if self:valid("technology") then
-        local ing = self.unit.ingredients
-        if ing then
-            for i = #ing, 1, -1 do
-                if ing[i][1] == old_pack then
-                    ing[i][1] = new_pack
-                    ing[i][2] = count or ing[i][2] or 1
-                    break
-                end
+    if self:valid('technology') then
+        local ings = self.unit.ingredients
+        for i, ing in pairs(ings or {}) do
+            if ing[1] == old_pack then
+                ing[1] = new_pack
+                ing[2] = count or ing[2] or 1
+                break
             end
         end
     end
@@ -165,7 +163,7 @@ function Technology:replace_pack(old_pack, new_pack, count)
 end
 
 function Technology:add_prereq(tech_name)
-    if self:valid("technology") and Technology(tech_name):valid() then
+    if self:valid('technology') and Technology(tech_name):valid() then
         self.prerequisites = self.prerequisites or {}
         local pre = self.prerequisites
         for _, existing in pairs(pre) do
@@ -180,7 +178,7 @@ function Technology:add_prereq(tech_name)
 end
 
 function Technology:remove_prereq(tech_name)
-    if self:valid("technology") then
+    if self:valid('technology') then
         local pre = self.prerequisites or {}
         for i = #pre, 1, -1 do
             if pre[i] == tech_name then
@@ -196,7 +194,8 @@ end
 
 Technology._mt = {
     __index = Technology,
-    __call = Technology._get
+    __call = Technology._caller,
+    __tostring = Technology.tostring
 }
 
 return Technology

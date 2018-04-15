@@ -5,13 +5,15 @@
 -- local Player = require('stdlib/event/player').register_events()
 -- -- The fist time this is required it will register player creation events
 
-require("stdlib/event/event")
+local Event = require('stdlib/event/event')
 
-local Player = {_module_name = "Player"}
-setmetatable(Player, {__index = require("stdlib/core")})
+local Player = {
+    _module = 'Player'
+}
+setmetatable(Player, require('stdlib/core'))
 
-local fail_if_not = Player.fail_if_not
-local Game = require("stdlib/game")
+local Is = require('stdlib/utils/is')
+local Game = require('stdlib/game')
 
 -- Return new default player object consiting of index and name
 local function new(player_index)
@@ -20,25 +22,25 @@ local function new(player_index)
         name = game.players[player_index].name,
         force = game.players[player_index].force.name
     }
-    if Event._new_player_data then
-        if type(Event._new_player_data) == "table" then
-            table.merge(pdata, table.deepcopy(Event._new_player_data))
-        elseif type(Event._new_player_data) == "function" then
-            local new_data = Event._new_player_data(player_index)
-            if type(new_data) == "table" then
+    if Player._new_player_data then
+        if type(Player._new_player_data) == 'table' then
+            table.merge(pdata, table.deepcopy(Player._new_player_data))
+        elseif type(Player._new_player_data) == 'function' then
+            local new_data = Player._new_player_data(player_index)
+            if type(new_data) == 'table' then
                 table.merge(pdata, new_data)
             else
-                error("new_player_data did not return a table")
+                error('new_player_data did not return a table')
             end
         else
-            error("new_player_data present but is not a function or table")
+            error('new_player_data present but is not a function or table')
         end
     end
     return pdata
 end
 
 function Player.additional_data(func_or_table)
-    Event._new_player_data = func_or_table
+    Player._new_player_data = func_or_table
     return Player
 end
 
@@ -51,13 +53,13 @@ end
 -- local player, player_data = Player.get(event.player_index)
 function Player.get(player)
     player = Game.get_player(player)
-    fail_if_not(player, "Missing player to retrieve")
+    Is.Assert(player, 'Missing player to retrieve')
     return player, global.players[player.index] or Player.init(player.index)
 end
 
 --- Merge a copy of the passed data to all players in `global.players`.
 -- @tparam table data a table containing variables to merge
--- @usage local data = {a = 'abc', b= 'def'}
+-- @usage local data = {a = 'abc', b = 'def'}
 -- Player.add_data_all(data)
 function Player.add_data_all(data)
     local pdata = global.players
@@ -119,21 +121,18 @@ function Player.update_force(event)
     pdata.force = player.force.name
 end
 
-local events = {defines.events.on_player_created, Event.core_events.configuration_changed}
-function Player.register_events(skip_init)
-    require("stdlib.event.event")
-    Event.register(events, Player.init)
-    Event.register(defines.events.on_player_changed_force, Player.update_force)
-    Event.register(defines.events.on_player_removed, Player.remove)
-    if not skip_init then
-        Player.register_init()
-    end
+function Player.register_init()
+    Event.register(Event.core_events.init, Player.init)
     return Player
 end
 
-function Player.register_init()
-    require("stdlib.event.event")
-    Event.register(Event.core_events.init, Player.init)
+function Player.register_events(do_on_init)
+    Event.register(defines.events.on_player_created, Player.init)
+    Event.register(defines.events.on_player_changed_force, Player.update_force)
+    Event.register(defines.events.on_player_removed, Player.remove)
+    if do_on_init then
+        Player.register_init()
+    end
     return Player
 end
 

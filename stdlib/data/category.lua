@@ -2,24 +2,23 @@
 -- @classmod Category
 
 local Category = {
-    _class = "category"
+    _class = 'Category'
 }
-setmetatable(Category, {__index = require("stdlib/data/data")})
+setmetatable(Category, require('stdlib/data/data'))
 
 Category.category_types = {
-    ["ammo-category"] = true,
-    ["equipment-category"] = true,
-    ["fuel-category"] = true,
-    ["recipe-category"] = true,
-    ["module-category"] = true,
-    ["rail-category"] = true,
-    ["resource-category"] = true,
+    ['ammo-category'] = true,
+    ['equipment-category'] = true,
+    ['fuel-category'] = true,
+    ['recipe-category'] = true,
+    ['module-category'] = true,
+    ['rail-category'] = true,
+    ['resource-category'] = true
 }
 
-function Category:_get(category_name, category_type)
+function Category:_caller(category_name, category_type)
     return self:get(category_name, category_type)
 end
-Category:set_caller(Category._get)
 
 function Category:create()
     return self
@@ -34,7 +33,7 @@ function Category:remove()
 end
 
 function Category:replace(a, b)
-    if self:valid("category") then
+    if self:valid('category') then
         self:remove(a)
         self:add(b)
     end
@@ -43,7 +42,7 @@ end
 
 Category._mt = {
     __index = Category,
-    __call = Category._get,
+    __call = Category._caller,
     __tostring = Category.tostring
 }
 
