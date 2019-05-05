@@ -3,13 +3,13 @@ Autofill
 
 The Autofill mod by rk84 updated for .13 by Jakimfett and more default sets added by Nexela
 
-###Please report any problems to the forum post, or to Github. The mod portal does not notify me about new posts.
+### Please report any problems to the forum post, or to Github. The mod portal does not notify me about new posts.
 https://forums.factorio.com/viewtopic.php?f=92&t=1612
 https://github.com/Nexela/autofill/issues
 
 Autofill Automatically fills fuel (like coal) and ammo from your main inventory to entities when you create them. Including Trains, Planes, and Automobiles. Oh and Turrets, boilers, burner inserters, burner assemblers, and overpowered nuclear weapon launchers just to name a few more!
 
-##Now with HOTKEY support!
+## Now with HOTKEY support!
 All these keys are configurable in your Factorio - Controls - Mods menu.
 Hover over an entity in the field and CTRL-F to fill it based on your ruleset!
 Toggle filling limits on or off with CTRL-SHIFT-F for those times when you want to Fill something without limits.
@@ -31,7 +31,7 @@ Current Mods with a set enabled by default:
 
 ---
 
-####More Information
+#### More Information
 
 * Fuel items are automatically added and sorted from low to high anytime a mod is added, changed, or removed.
 * car, diesel-locomotive and tank are loaded with fuel with highest fuel value. (+ tank includes ammos too)
@@ -40,7 +40,7 @@ Current Mods with a set enabled by default:
 
 If a mod you like doesn't work out of the box let me know and I will see about adding it, or walk your through how to add it to your personal set using the command line interface.
 
-####Examples for making your own set:  
+#### Examples for making your own set:  
 
 Create  personal setting for car.
 `remote.call("af", "insertset", "", "car", {{"coal","raw-wood"}, "basic-bullet-magazine"}) `
@@ -51,7 +51,7 @@ reset to default setting
 
 ------
 
-###TODO
+### TODO
 
 * Super Awesome GUI for making sets a lot easier
 * Better Error Checking
@@ -59,8 +59,8 @@ reset to default setting
 
 ---
 
-####Change Log
-##Please see the changelog.txt file for more details
+#### Change Log
+## Please see the changelog.txt file for more details
 
 * 1.4.6   - Additional Turrets added
 * 1.4.5   - Updates to new Bobmods changes, Dytech and Outposts support
